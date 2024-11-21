@@ -26,9 +26,9 @@ pipeline {
                 dir('app'){
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh '''
-                            docker build -t jinitus/2244_ica2:v2 .
+                            docker build -t jinitus/2244_ica2:v1 .
                             docker login -u ${USERNAME} -p ${PASSWORD}
-                            docker push jinitus/2244_ica2:v2
+                            docker push jinitus/2244_ica2:v1
                         '''
                     }
                 }
@@ -39,7 +39,7 @@ pipeline {
             steps {
                 echo "deploying container"
                 sh 'docker stop 2244_ica2 || true && docker rm 2244_ica2 || true'
-                sh 'docker run --name 2244_ica2 -d -p 8081:80 jinitus/2244_ica2:v2'
+                sh 'docker run --name 2244_ica2 -d -p 8081:80 jinitus/2244_ica2:v1'
             }
         }
 
