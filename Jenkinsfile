@@ -3,8 +3,7 @@
 pipeline {
     agent any
     environment {
-        TAG_DYNAMIC = "${env.GIT_BRANCH.replaceFirst('^origin/',
-'')}-${env.BUILD_ID}"
+        TAG_DYNAMIC = "${env.GIT_BRANCH.replaceFirst('^origin/','')}-${env.BUILD_ID}"
         }
     stages {
         stage('Cleanup') {
