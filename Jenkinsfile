@@ -32,9 +32,7 @@ pipeline {
         stage('Build and Push') {
             steps {
                 echo 'Building..'
-                    withCredentials([usernamePassword(credentialsId:
-'dockerHub_auth', passwordVariable: 'PASSWORD',
-usernameVariable: 'USERNAME')]) {
+                    withCredentials([usernamePassword(credentialsId:'dockerHub_auth', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                         sh "docker login -u ${USERNAME} -p ${PASSWORD}"
                         sh "docker tag jinitus/2244_ica2 jinitus/2244_ica2:${TAG_DYNAMIC}"
                         sh "docker push jinitus/2244_ica2:${TAG_DYNAMIC}"
