@@ -20,11 +20,10 @@ pipeline {
         stage('') {
             steps {
                 sh '''
-                    docker stop temp_container
-                    docker rm temp_container
+                    //docker stop temp_container
+                    //docker rm temp_container
                     docker build -t jinitus/2244_ica2 .
-                    docker run -d -p 8081:80 --name temp_container
-jinitus/2244_ica2
+                    docker run -d -p 8081:80 --name temp_container jinitus/2244_ica2
                     curl -I localhost:8081
                 '''
             }
