@@ -23,8 +23,8 @@ pipeline {
         stage('Build and Push') {
             steps {
                 echo 'Building..'
-                dir('/var/lib/jenkins/workspace/develop_docker_pipeline/'){
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                {
+                    withCredentials([usernamePassword(credentialsId: 'dockerHub_auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh '''
                             docker build -t jinitus/2244_ica2:v1 .
                             docker login -u ${USERNAME} -p ${PASSWORD}
