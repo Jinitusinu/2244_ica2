@@ -1,50 +1,71 @@
 pipeline {
     agent any
-    environment {
-        TAG_DYNAMIC = "${env.GIT_BRANCH.replaceFirst('^origin/','')}-${env.BUILD_ID}"
-        }
     stages {
         stage('Cleanup') {
             steps {
-                cleanWs()
+                cleanWs() // Cleans the workspace
             }
         }
 
-        stage('Clone Git Repo') {
+        stage('Checkout Code') {
             steps {
-                checkout scm
+                checkout scm // Checks out the code from the repository
             }
         }
 
-
-        stage('') {
+        stage('Copy Files to Remote Server') {
             steps {
-                sh '''
-                    //docker stop temp_container
-                    //docker rm temp_container
-                    docker build -t jinitus/2244_ica2 .
-                    docker run -d -p 8081:80 --name temp_container jinitus/2244_ica2
-                    curl -I localhost:8081
-                '''
+                sshagent(['docker-server']) {
+                    sh '''
+                    scp -r Dockerfile Jenkinsfile README.md assets error images index.html root@192.168.252.20:/opt/website_project/
+                    '''
+                }
             }
         }
 
-        stage('Build and Push') {
+        stage('Build Image') {
             steps {
-                echo 'Building..'
-                    withCredentials([usernamePassword(credentialsId:'dockerHub_auth', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                        sh "docker login -u ${USERNAME} -p ${PASSWORD}"
-                        sh "docker tag jinitus/2244_ica2 jinitus/2244_ica2:${TAG_DYNAMIC}"
-                        sh "docker push jinitus/2244_ica2:${TAG_DYNAMIC}"
-                        sh "docker push jinitus/2244_ica2"
+                sshagent(['docker-server']) {
+                    sh '''
+                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
+                    '''
+                }
+            }
+        }
+
+        stage('Run Container') {
+            steps {
+                sshagent(['docker-server']) {
+                    sh '''
+                    ssh root@192.168.252.20 "docker stop develop-container || true && docker rm develop-container || true && docker run --name develop-container -d -p 8081:80 static-website-nginx:develop-${BUILD_ID}"
+                    '''
+                }
+            }
+        }
+
+        stage('Test Website') {
+            steps {
+                sshagent(['docker-server']) {
+                    sh '''
+                    ssh root@192.168.252.20 "curl -I http://192.168.252.20:8081"
+                    '''
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                sshagent(['docker-server']) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh '''
+                        ssh root@192.168.252.20 "docker login -u $USERNAME -p $PASSWORD"
+                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:latest"
+                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:develop-${BUILD_ID}"
+                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:latest"
+                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:develop-${BUILD_ID}"
+                        '''
                     }
-            }
-        }
-
-        stage('Image push completed'){
-            steps {
-                echo 'Completed...'
-
+                }
             }
         }
     }
