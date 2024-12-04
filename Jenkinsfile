@@ -1,51 +1,32 @@
-
 pipeline {
     agent any
     stages {
-        stage('Cleanup') {
+        stage('Pull Image') {
             steps {
-                cleanWs()
-            }
-        }
-
-        stage('Clone Git Repo') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Listing files') {
-            steps {
-                sh 'ls -l'
-            }
-        }
-
-        stage('Build and Push') {
-            steps {
-                echo 'Building..'
-                dir('app'){
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh '''
-                            docker build -t jinitus/2244_ica2:v2 .
-                            docker login -u ${USERNAME} -p ${PASSWORD}
-                            docker push jinitus/2244_ica2:v2
-                        '''
-                    }
+                // Pulls the latest image from Docker Hub on the remote server
+                sshagent(['docker-server']) {
+                    sh 'ssh root@192.168.252.20 "docker pull jinitus/static-website-nginx:latest"'
                 }
             }
         }
 
-        stage('Deploy container'){
+        stage('Run Container') {
             steps {
-                echo "deploying container"
-                sh 'docker stop 2244_ica2 || true && docker rm 2244_ica2 || true'
-                sh 'docker run --name 2244_ica2 -d -p 8081:80 jinitus/2244_ica2:v2'
+                // Stops and removes any existing container, then runs a new one on the remote server
+                sshagent(['docker-server']) {
+                    sh '''
+                        ssh root@192.168.252.20 "docker stop main-container || true"
+                        ssh root@192.168.252.20 "docker rm main-container || true"
+                        ssh root@192.168.252.20 "docker run --name main-container -d -p 8082:80 jinitus/static-website-nginx:latest"
+                    '''
+                }
             }
         }
 
-        stage('Test container'){
+        stage('Test Website') {
             steps {
-                sh 'curl -I localhost:8081'
+                // Tests if the website is accessible on the new container on the remote server
+                sh 'curl -I http://192.168.252.20:8082 || exit 1'
             }
         }
     }
