@@ -27,21 +27,7 @@ pipeline {
             steps {
                 sshagent(['docker-server']) {
                     sh '''
-                     // Get branch name and sanitize it to replace invalid characters
-                def branchName = BRANCH_NAME.replaceAll('/', '-')
-                
-                // Ensure BUILD_ID is set, if not fallback to a default value
-                def buildId = env.BUILD_ID ?: "default"
-                
-                // Generate the image tag
-                def imageTag = "static-website-nginx:${branchName}-${buildId}"
-                
-                // Build the Docker image
-                
-                ssh root@192.168.252.20 "cd /opt/website_project && docker build -t ${imageTag} ."
-                
-                    //ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:${BRANCH_NAME}-${BUILD_ID} ."
-                    // ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
+                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
                     '''
                 }
             }
