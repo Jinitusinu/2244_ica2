@@ -64,9 +64,9 @@ pipeline {
                         sh '''
                         ssh root@192.168.252.20 "docker login -u $USERNAME -p $PASSWORD"
                         ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:latest"
-                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:${imageTag}"
+                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:develop-${BUILD_ID}"
                         ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:latest"
-                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:${imageTag}"
+                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:develop-${BUILD_ID}"
                         '''
                     }
                 }
