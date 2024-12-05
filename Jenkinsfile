@@ -27,7 +27,8 @@ pipeline {
             steps {
                 sshagent(['docker-server']) {
                     sh '''
-                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
+                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:${BRANCH_NAME}-${BUILD_ID} .
+                    // ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
                     '''
                 }
             }
@@ -48,6 +49,10 @@ pipeline {
                 sshagent(['docker-server']) {
                     sh '''
                     ssh root@192.168.252.20 "curl -I http://192.168.252.20:8081"
+                    if ! curl -I http://192.168.252.20:8081; then
+                    echo "Website is not accessible, stopping pipeline."
+                    exit 1
+                    fi
                     '''
                 }
             }
