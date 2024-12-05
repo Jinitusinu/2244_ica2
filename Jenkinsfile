@@ -27,7 +27,20 @@ pipeline {
             steps {
                 sshagent(['docker-server']) {
                     sh '''
-                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:${BRANCH_NAME}-${BUILD_ID} ."
+                     // Get branch name and sanitize it to replace invalid characters
+                def branchName = BRANCH_NAME.replaceAll('/', '-')
+                
+                // Ensure BUILD_ID is set, if not fallback to a default value
+                def buildId = env.BUILD_ID ?: "default"
+                
+                // Generate the image tag
+                def imageTag = "static-website-nginx:${branchName}-${buildId}"
+                
+                // Build the Docker image
+                
+                ssh root@192.168.252.20 "cd /opt/website_project && docker build -t ${imageTag} ."
+                
+                    //ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:${BRANCH_NAME}-${BUILD_ID} ."
                     // ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
                     '''
                 }
@@ -65,9 +78,9 @@ pipeline {
                         sh '''
                         ssh root@192.168.252.20 "docker login -u $USERNAME -p $PASSWORD"
                         ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:latest"
-                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:develop-${BUILD_ID}"
+                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:${imageTag}"
                         ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:latest"
-                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:develop-${BUILD_ID}"
+                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:${imageTag}"
                         '''
                     }
                 }
