@@ -27,7 +27,7 @@ pipeline {
             steps {
                 sshagent(['docker-server']) {
                     sh '''
-                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:${BRANCH_NAME}-${BUILD_ID} .
+                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:${BRANCH_NAME}-${BUILD_ID} ."
                     // ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
                     '''
                 }
