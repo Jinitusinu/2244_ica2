@@ -1,28 +1,34 @@
 pipeline {
     agent any
     stages {
-        stage('Pull Image') {
+        stage('Cleanup') {
+            steps {
+                cleanWs() // Cleans the workspace
+            }
+        }
+
+        stage('Checkout Code') {
+            steps {
+                checkout scm // Checks out the code from the repository
+            }
+        }
+
+        stage('Copy Files to Remote Server') {
             steps {
                 sshagent(['docker-server']) {
-                    sh 'ssh root@192.168.252.20 "docker pull jinitus/static-website-nginx:latest"'
+                    sh '''
+                    scp -r Dockerfile Jenkinsfile README.md assets error images index.html root@192.168.252.20:/opt/website_project/
+                    '''
                 }
             }
         }
 
-        stage('Stop and Remove Existing Container') {
+        stage('Build Image') {
             steps {
                 sshagent(['docker-server']) {
-                    script {
-                        // Ensuring no container is using port 8082
-                        echo "Stopping and removing any existing containers using port 8082"
-                        sh '''
-                            ssh root@192.168.252.20 "docker stop main-container || true"
-                            ssh root@192.168.252.20 "docker rm main-container || true"
-                            # If any container is using port 8082, stop and remove it
-                            ssh root@192.168.252.20 "docker ps -q -f 'ancestor=jinitus/static-website-nginx:latest' -f 'publish=8082' | xargs -r docker stop"
-                            ssh root@192.168.252.20 "docker ps -q -f 'ancestor=jinitus/static-website-nginx:latest' -f 'publish=8082' | xargs -r docker rm"
-                        '''
-                    }
+                    sh '''
+                    ssh root@192.168.252.20 "cd /opt/website_project && docker build -t static-website-nginx:develop-${BUILD_ID} ."
+                    '''
                 }
             }
         }
@@ -31,8 +37,7 @@ pipeline {
             steps {
                 sshagent(['docker-server']) {
                     sh '''
-                        # Run the container with the new image
-                        ssh root@192.168.252.20 "docker run --name main-container -d -p 8082:80 jinitus/static-website-nginx:latest"
+                    ssh root@192.168.252.20 "docker stop develop-container || true && docker rm develop-container || true && docker run --name develop-container -d -p 8081:80 static-website-nginx:develop-${BUILD_ID}"
                     '''
                 }
             }
@@ -40,7 +45,27 @@ pipeline {
 
         stage('Test Website') {
             steps {
-                sh 'curl -I http://192.168.252.20:8082 || exit 1'
+                sshagent(['docker-server']) {
+                    sh '''
+                    ssh root@192.168.252.20 "curl -I http://192.168.252.20:8081"
+                    '''
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                sshagent(['docker-server']) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub_auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh '''
+                        ssh root@192.168.252.20 "docker login -u $USERNAME -p $PASSWORD"
+                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:latest"
+                        ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:develop-${BUILD_ID}"
+                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:latest"
+                        ssh root@192.168.252.20 "docker push $USERNAME/static-website-nginx:develop-${BUILD_ID}"
+                        '''
+                    }
+                }
             }
         }
     }
