@@ -4,7 +4,7 @@ pipeline {
         stage('Pull Image') {
             steps {
                 sshagent(['docker-server']) {
-                    sh 'ssh root@192.168.252.20 "docker pull Misbah/static-website-nginx:latest"'
+                    sh 'ssh root@192.168.252.20 "docker pull kubemisbah/static-website-nginx:latest"'
                 }
             }
         }
@@ -19,8 +19,8 @@ pipeline {
                             ssh root@192.168.252.20 "docker stop main-container || true"
                             ssh root@192.168.252.20 "docker rm main-container || true"
                             # If any container is using port 8082, stop and remove it
-                            ssh root@192.168.252.20 "docker ps -q -f 'ancestor=Misbah/static-website-nginx:latest' -f 'publish=8082' | xargs -r docker stop"
-                            ssh root@192.168.252.20 "docker ps -q -f 'ancestor=Misbah/static-website-nginx:latest' -f 'publish=8082' | xargs -r docker rm"
+                            ssh root@192.168.252.20 "docker ps -q -f 'ancestor=kubemisbah/static-website-nginx:latest' -f 'publish=8082' | xargs -r docker stop"
+                            ssh root@192.168.252.20 "docker ps -q -f 'ancestor=kubemisbah/static-website-nginx:latest' -f 'publish=8082' | xargs -r docker rm"
                         '''
                     }
                 }
@@ -32,7 +32,7 @@ pipeline {
                 sshagent(['docker-server']) {
                     sh '''
                         # Run the container with the new image
-                        ssh root@192.168.252.20 "docker run --name main-container -d -p 8082:80 Misbah/static-website-nginx:latest"
+                        ssh root@192.168.252.20 "docker run --name main-container -d -p 8082:80 kubemisbah/static-website-nginx:latest"
                     '''
                 }
             }
