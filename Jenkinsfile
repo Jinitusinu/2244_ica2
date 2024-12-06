@@ -56,7 +56,7 @@ pipeline {
         stage('Push Image') {
             steps {
                 sshagent(['docker-server']) {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub_auth', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'docker-server_1', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh '''
                         ssh root@192.168.252.20 "docker login -u $USERNAME -p $PASSWORD"
                         ssh root@192.168.252.20 "docker tag static-website-nginx:develop-${BUILD_ID} $USERNAME/static-website-nginx:latest"
